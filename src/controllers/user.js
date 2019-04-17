@@ -10,6 +10,7 @@ const signIn = (req, res, next) => {
     
     let token = '';
     conn.query(sql, [nama, kode_rahasia], (_err, results) => {
+        console.log(results)
         if(_err) {
             res.status(500).json({
                 success: false,
