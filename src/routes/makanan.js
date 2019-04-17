@@ -1,9 +1,18 @@
 const express = require('express')
 const app = express.Router()
-const {getData, addData, updateData} = require('../controllers/makanan')
+const {
+    getData,
+    addData,
+    updateData,
+    deleteData
+} = require('../controllers/makanan')
+const {
+    multer
+} = require('../utils/multer-config')
 app.route('/makanan')
     .get(getData)
-    .post(addData)
+    .post(multer, addData)
     .put(updateData)
+    .delete(deleteData)
 
 module.exports = app

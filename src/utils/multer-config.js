@@ -9,12 +9,12 @@ const multer = require('multer') // middleware for image
 
 const storage = multer.diskStorage({ // storage configuration
     destination: (req, file, cb) => { // cb as callback
-        // console.log(file)
+        console.log(file)
         cb(null, path.resolve(__dirname, '../', 'uploads')) // set where file to be save
     },
     filename: (req, file, cb) => {
         if (req.query.type) {
-            cb(null, Date.now() + '_' + req.query.type + '_' + req.query.name + path.extname(file.originalname)) // set file name
+            cb(null, Date.now() + '_' + req.query.type + path.extname(file.originalname)) // set file name
         }
     }
 })
@@ -25,6 +25,7 @@ const storage = multer.diskStorage({ // storage configuration
  * callback @param {2} Boolean true or false
  */
 const fileFilter = (req, file, cb) => {
+    console.log(file)
     if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
         cb(null, true)
     } else {
