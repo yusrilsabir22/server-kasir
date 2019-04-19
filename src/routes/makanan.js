@@ -3,7 +3,7 @@ const app = express.Router()
 const {
     getData,
     addData,
-    updateData,
+    changeDataMenu,
     deleteData
 } = require('../controllers/makanan')
 const {
@@ -12,7 +12,7 @@ const {
 app.route('/makanan')
     .get(getData)
     .post(multer, addData)
-    .put(updateData)
+    .put(multer, changeDataMenu)
     .delete(deleteData)
 
 module.exports = app

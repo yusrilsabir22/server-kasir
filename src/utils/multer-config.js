@@ -9,7 +9,6 @@ const multer = require('multer') // middleware for image
 
 const storage = multer.diskStorage({ // storage configuration
     destination: (req, file, cb) => { // cb as callback
-        console.log(file)
         cb(null, path.resolve(__dirname, '../', 'uploads')) // set where file to be save
     },
     filename: (req, file, cb) => {
@@ -34,11 +33,11 @@ const fileFilter = (req, file, cb) => {
 }
 
 const upload = multer({
+    fileFilter, // filter configuration
     storage, // storage configuration
     limits: {
         fileSize: 1024 * 1024 * 5 // set limit for filesize
     },
-    fileFilter, // filter configuration
 })
 
 module.exports = {

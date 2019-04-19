@@ -107,9 +107,35 @@ const deleteData = (req, res, next) => {
     })
 }
 
+const changeDataMenu = (req, res, next) => {
+    const sql = `update makanan set nama = ?, harga = ?, stok = ?, tipe = ? where id = ?`
+    const sql2 = `update makanan set nama = ?, harga = ?, stok = ?, tipe = ?, imageUrl = ? where id = ?`
+    const { nama, harga, stok, tipe } = req.body
+    const { id } = req.query
+    let url = ''
+    if (req.query.img === 'true') {
+        url = req.file.filename;
+        conn.query(sql2, [nama, harga, stok, tipe, url, id], (err, results) => {
+            if (err) {
+                res.status(500).json({ success: false, ...err })
+            } else {
+                res.status(201).json({ success: true, ...results })
+            }
+        })
+    } else {
+        conn.query(sql, [nama, harga, stok, tipe, id], (err, results) => {
+            if (err) {
+                res.status(500).json({ success: false, ...err })
+            } else {
+                res.status(201).json({ success: true, ...results })
+            }
+        })
+    }
+}
 module.exports = {
     getData,
     addData,
     updateData,
-    deleteData
+    deleteData,
+    changeDataMenu
 }
