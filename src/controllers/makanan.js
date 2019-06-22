@@ -1,141 +1,170 @@
 require('dotenv').config()
 const conn = require('../utils/intializeMysql')
-const uuid = require('uuid')
+const fs = require('fs')
+const path = require('path')
+const queryString = require('query-string')
 
 const getData = (req, res, next) => {
     const sql = `SELECT * FROM makanan`
     conn.query(sql, (_err, results) => {
         _err ?
-            res.status(500).json(_err) :
+            res.status(500).json({
+                success_get_makanan: false,
+                message_get_makanan: 'Gagal mendapatkan makanan',
+                error: _err
+            }) :
             res.status(200).json({
-                success: true,
+                success_get_makanan: true,
+                message_get_makanan: 'Berhasil mendapatkan makanan',
                 menus: results
             })
     })
 }
 
 const addData = (req, res, next) => {
-    const sql = `insert into makanan(id, nama, harga, stok, tipe, img) values (?, ?, ?, ?, ?, ?)`
-    const id = uuid.v1()
+    const sql = `insert into makanan(id_makanan, nama, harga, tipe, img) values (?, ?, ?, ?, ?)`
+    const id = req.userData.id
     const {
         nama,
         harga,
-        stok,
         tipe
     } = req.body
     const img = `http://${process.env.HOST}:${process.env.PORT}/uploads/${req.file.filename}`
-    console.log(img)
+    // console.log(img)
     if (tipe.toLowerCase() === 'makanan' || tipe.toLowerCase() === 'minuman') {
-        conn.query(sql, [id, nama, parseInt(harga), parseInt(stok), tipe, img], (err, results) => {
+        conn.query(sql, [id, nama, parseInt(harga), tipe, img], (err, results) => {
             err ?
                 res.status(500).json({
-                    success: false,
+                    success_send_menu: false,
+                    message_send_menu: 'Gagal menambahkan makanan',
                     error: err
                 }) :
                 res.status(201).json({
-                    success: true,
-                    message: results
+                    success_send_menu: true,
+                    message_send_menu: 'Berhasil menambahkan makanan'
                 })
         })
     } else if (!tipe) {
         res.status(500).json({
-            success: false,
-            error: {
-                message: 'something went wrong'
-            }
+            success_send_menu: false,
+            message_send_menu: 'Gagal menambahkan makanan, karena tipe makanan'
         })
     } else {
         res.status(500).json({
-            success: false,
-            error: {
-                message: 'something went wrong'
-            }
+            success_send_menu: false,
+            message_send_menu: 'Gagal menambahkan makanan, kesalahan server',
         })
-    }
-}
-
-const updateData = (req, res, next) => {
-    const sqlUpdate = `update makanan set stok = ? where id = ?`
-    const sqlGet = `select * from makanan where id = ?`
-    const {
-        id
-    } = req.query;
-    const {
-        stok
-    } = req.body
-    try {
-        conn.query(sqlGet, [id], (_err, data) => {
-            if (data.length > 0) {
-                if (parseInt(data[0].stok) > 0) {
-                    const stokDb = data[0].stok;
-                    const finalStok = parseInt(stokDb) - stok;
-                    conn.query(sqlUpdate, [finalStok, id], (err, results) => {
-                        err ?
-                            res.status(500).json({
-                                success: false,
-                                error: err
-                            }) :
-                            res.status(201).json({
-                                sucess: true,
-                                results
-                            })
-                    })
-                } else {
-                    res.status(500).json({
-                        success: false,
-                        error: "Stok sudah habis"
-                    })
-                }
-            } else {
-                res.status(500).json({
-                    success: false,
-                    message: 'data not found'
-                })
-            }
-        })
-    } catch (error) {
-        console.log(error)
     }
 }
 
 const deleteData = (req, res, next) => {
-    const sql = 'delete from makanan where id = ?'
-    const { id } = req.query
-    conn.query(sql, [id], (err, results) => {
-        if (err) res.status(500).json(err)
-        res.status(201).json(results)
+   
+    const pathFile = path.join(__dirname, '..', 'uploads')
+    fs.readdir(pathFile, (err, files)=> {
+        if(err) {
+            res.status(500).json({
+                success_delete_makanan: false,
+                message_delete_makanan: 'Gagal menghapus data dan gambar makanan',
+                error: err
+            }).end()
+        } else {
+            for(let o in files) {
+                const d = files[o].split('.')
+                if (d[0] == req.query.id) {
+                    fs.unlink(pathFile + '/' + files[o], (err) => {
+                        if(err) {
+                            res.status(500).json({
+                                success_delete_makanan: false,
+                                message_delete_makanan: 'Gagal gambar makanan',
+                                error: err
+                            }).end()
+                        } else {
+                            const sql = 'delete from makanan where id_makanan = ?'
+                            const {
+                                id
+                            } = req.query
+                            conn.query(sql, [id], (err, results) => {
+                                if (err) res.status(500).json({
+                                    success_delete_makanan: false,
+                                    message_delete_makanan: 'Gagal menghapus data makanan',
+                                    error: err
+                                }).end();
+                                res.status(201).json({
+                                    success_delete_makanan: true,
+                                    message_delete_makanan: 'Berhasil menghapus data makanan',
+                                    ...results
+                                }).end()
+                            })
+                        }
+                    })
+                    break;
+                } else {
+                    if ((files.length - 1) == o) {
+                        res.status(500).json({
+                            success_delete_makanan: false,
+                            message_delete_makanan: 'tidak ada gambar yang ditemukan'
+                        }).end()
+                        break;
+                    }
+                }
+            }
+        }
     })
+    
 }
 
-const changeDataMenu = (req, res, next) => {
-    const sql = `update makanan set nama = ?, harga = ?, stok = ?, tipe = ? where id = ?`
-    const sql2 = `update makanan set nama = ?, harga = ?, stok = ?, tipe = ?, imageUrl = ? where id = ?`
-    const { nama, harga, stok, tipe } = req.body
-    const { id } = req.query
-    let url = ''
-    if (req.query.img === 'true') {
-        url = req.file.filename;
-        conn.query(sql2, [nama, harga, stok, tipe, url, id], (err, results) => {
+const testUpdateQuery = (req, res, next) => {
+    if(req.query.img == 'true') {
+        const img = 'http://'+process.env.HOST+':'+process.env.PORT+'/uploads/'+req.file.filename
+        const reqBody = Object.keys(req.body)
+        let reqBody1 = ''
+        let tester2 = ''
+        let query1 = ''
+        if(reqBody.length < 1) {
+            query1 = `update makanan set img='${img}' where id_makanan='${req.query.id}'`;
+        } else {
+            reqBody1 = queryString.stringify(req.body)
+            tester2 = reqBody1.split("%20").join(" ").split("&").join("',").split("=").join("='")
+            query1 = `update makanan set ${tester2}', img='${img}' where id_makanan='${req.query.id}'`;
+        }
+        conn.query(query1, (err, results) => {
             if (err) {
-                res.status(500).json({ success: false, ...err })
+                res.status(500).json({ 
+                    success_update_makanan: false,
+                    message_update_makanan: 'Gagal mengubah data makanan',
+                    error: err 
+                })
             } else {
-                res.status(201).json({ success: true, ...results })
+                res.status(201).json({ 
+                    success_update_makanan: true,
+                    message_update_makanan: 'Berhasil mengubah data makanan',
+                })
             }
         })
     } else {
-        conn.query(sql, [nama, harga, stok, tipe, id], (err, results) => {
+        const reqBody1 = queryString.stringify(req.body)
+        const tester2 = reqBody1.split("%20").join(" ").split("&").join("',").split("=").join("='")
+        const query1 = `update makanan set ${tester2}' where id_makanan='${req.query.id}'`;
+        conn.query(query1, (err, results) => {
             if (err) {
-                res.status(500).json({ success: false, ...err })
+                res.status(500).json({
+                    success_update_makanan: false,
+                    message_update_makanan: 'Gagal mengubah data makanan',
+                    error: err
+                })
             } else {
-                res.status(201).json({ success: true, ...results })
+                res.status(201).json({
+                    success_update_makanan: true,
+                    message_update_makanan: 'Berhasil mengubah data makanan',
+                })
             }
         })
     }
 }
+
 module.exports = {
     getData,
     addData,
-    updateData,
     deleteData,
-    changeDataMenu
+    testUpdateQuery
 }

@@ -3,16 +3,15 @@ const app = express.Router()
 const {
     getData,
     addData,
-    changeDataMenu,
-    deleteData
+    deleteData,
+    testUpdateQuery
 } = require('../controllers/makanan')
-const {
-    multer
-} = require('../utils/multer-config')
+const {multer} = require('../utils/multer-config')
+
 app.route('/makanan')
-    .get(getData)
-    .post(multer, addData)
-    .put(multer, changeDataMenu)
-    .delete(deleteData)
+    .post(multer, addData) // create
+    .get(getData) // read
+    .put(multer, testUpdateQuery) // update
+    .delete(deleteData); // delete
 
 module.exports = app

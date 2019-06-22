@@ -1,5 +1,6 @@
 const path = require('path') // define path
 const multer = require('multer') // middleware for image
+const {v1} = require('uuid')
 
 /**
  * @param {1} req express Request
@@ -12,9 +13,17 @@ const storage = multer.diskStorage({ // storage configuration
         cb(null, path.resolve(__dirname, '../', 'uploads')) // set where file to be save
     },
     filename: (req, file, cb) => {
-        if (req.query.type) {
-            cb(null, Date.now() + '_' + req.query.type + path.extname(file.originalname)) // set file name
+        let id = ''
+        if(req.query.method == 'update') {
+            id = req.query.id
+        } else if(req.query.method == 'post') {
+            id = v1()
         }
+        
+        req.userData = {
+            id: id
+        }
+        cb(null, id + path.extname(file.originalname)) // set file name
     }
 })
 
@@ -24,9 +33,16 @@ const storage = multer.diskStorage({ // storage configuration
  * callback @param {2} Boolean true or false
  */
 const fileFilter = (req, file, cb) => {
-    console.log(file)
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
-        cb(null, true)
+    if(!!file) {
+        if (req.query.method == 'update' || req.query.method == 'post') {
+            if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
+                cb(null, true)
+            } else {
+                cb(null, false)
+            }
+        } else {
+            cb(null, false)
+        }
     } else {
         cb(null, false)
     }
@@ -40,6 +56,6 @@ const upload = multer({
     },
 })
 
-module.exports = {
-    multer: upload.single('imageUrl'),
-} // define our form data name, in this i define as images
+module.exports ={ 
+    multer: upload.single('imageUrl')
+}
